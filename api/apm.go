@@ -6,6 +6,7 @@ import (
 	"github.com/go-chassis/huawei-apm/pkg/fifo"
 	"github.com/go-chassis/huawei-apm/thrift/gen-go/apm"
 	"github.com/go-mesh/openlogging"
+	"github.com/openzipkin-contrib/zipkin-go-opentracing/thrift/gen-go/zipkincore"
 	"sync"
 )
 
@@ -17,7 +18,7 @@ type APM interface {
 	//ReportDiscoveryInfo send info to APM
 	ReportDiscoveryInfo(info *apm.TDiscoveryInfo) error //one time per 5 min
 	ReportKPI(message []*apm.TKpiMessage) error         //one time per 1 min, source service can be several, so it is a slice
-	ReportTracing(span []*apm.TSpan) error              //one time per 1 min
+	ReportTracing(span []*zipkincore.Span) error        //one time per 1 min
 }
 
 type DefaultAPM struct {
@@ -78,7 +79,7 @@ func (da *DefaultAPM) ReportKPI(messages []*apm.TKpiMessage) error {
 	}
 	return nil
 }
-func (da *DefaultAPM) ReportTracing(spans []*apm.TSpan) error {
+func (da *DefaultAPM) ReportTracing(spans []*zipkincore.Span) error {
 	t := thrift.NewTMemoryBuffer()
 	p := thrift.NewTBinaryProtocolTransport(t)
 	if err := p.WriteListBegin(thrift.STRUCT, len(spans)); err != nil {

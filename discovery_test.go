@@ -29,8 +29,12 @@ func TestGetAppID(t *testing.T) {
 }
 
 func TestNewTDiscoveryInfo(t *testing.T) {
-	opts := huaweiapm.Options{}
-	_, err := huaweiapm.BuildTDiscoveryInfo(opts)
+	os.Setenv("PAAS_POD_ID", "1")
+	opts := huaweiapm.Options{
+		MonitoringGroup: "engine-app",
+		ServiceName:     "cart",
+		ServiceType:     "go-chassis"}
+	err := huaweiapm.Start(opts)
 	assert.Error(t, err)
 	t.Log(err)
 

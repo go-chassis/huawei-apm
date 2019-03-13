@@ -3,12 +3,11 @@ package huaweiapm
 import (
 	"crypto/md5"
 	"fmt"
-	"github.com/go-chassis/go-chassis/pkg/util/iputil"
 	"github.com/go-chassis/huawei-apm/runtime"
 	"github.com/go-chassis/huawei-apm/thrift/gen-go/apm"
 	"github.com/go-mesh/openlogging"
-	"gopkg.in/validator.v2"
 	"io"
+	"net"
 	"os"
 	"time"
 )
@@ -19,17 +18,50 @@ const (
 
 var instance *apm.TDiscoveryInfo
 
+func startDiscovery(disco *apm.TDiscoveryInfo) {
+	t, _ := time.ParseDuration(DefaultDiscoveryInterval)
+	ticker := time.Tick(t)
+	select {
+	case <-ticker:
+		if err := client.ReportDiscoveryInfo(disco); err != nil {
+			openlogging.Error("can not report inventory: " + err.Error())
+		}
+		openlogging.Debug("report inventory success")
+	case stop := <-StopInventory:
+		if stop {
+			openlogging.Info("inventory stopped")
+			break
+		}
+	}
+}
 func GetDiscoveryInfo() *apm.TDiscoveryInfo {
 	return instance
+}
+
+//GetLocalIP 获得本机IP
+func GetLocalIP() string {
+	addresses, err := net.InterfaceAddrs()
+	if err != nil {
+		return ""
+	}
+	for _, address := range addresses {
+		// Parse IP
+		var ip net.IP
+		if ip, _, err = net.ParseCIDR(address.String()); err != nil {
+			return ""
+		}
+		// Check if valid global unicast IPv4 address
+		if ip != nil && (ip.To4() != nil) && ip.IsGlobalUnicast() {
+			return ip.String()
+		}
+	}
+	return ""
 }
 
 //BuildTDiscoveryInfo create a APM instance info
 //if you report this info to cloud, APM can discovery your process
 //should report it every 5 mins
 func BuildTDiscoveryInfo(opts Options) (*apm.TDiscoveryInfo, error) {
-	if err := validator.Validate(opts); err != nil {
-		return nil, err
-	}
 	hostname := opts.Hostname
 	var err error
 	if hostname == "" {
@@ -41,7 +73,7 @@ func BuildTDiscoveryInfo(opts Options) (*apm.TDiscoveryInfo, error) {
 
 	ip := opts.IP
 	if ip == "" {
-		ip = iputil.GetLocalIP()
+		ip = GetLocalIP()
 	}
 	app := opts.App
 	if app == "" {

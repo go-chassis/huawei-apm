@@ -42,6 +42,7 @@ type TSpan struct {
   Duration *int64 `thrift:"duration,11" db:"duration" json:"duration,omitempty"`
 }
 
+
 func NewTSpan() *TSpan {
   return &TSpan{}
 }
