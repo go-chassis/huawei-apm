@@ -97,6 +97,8 @@ github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRW
 github.com/opentracing-contrib/go-observer v0.0.0-20170622124052-a52f23424492/go.mod h1:Ngi6UdF0k5OKD5t5wlmGhe/EDKPoUM3BXZSSfIuJbis=
 github.com/opentracing/opentracing-go v1.0.2/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/openzipkin-contrib/zipkin-go-opentracing v0.0.0-20180726151020-b85dc675b16b/go.mod h1:uVHyebswE1cCXr2A73cRM2frx5ld1RJUCJkFNZ90ZiI=
+github.com/openzipkin-contrib/zipkin-go-opentracing v0.3.5 h1:82Tnq9OJpn+h5xgGpss5/mOv3KXdjtkdorFSOUusjM8=
+github.com/openzipkin-contrib/zipkin-go-opentracing v0.3.5/go.mod h1:uVHyebswE1cCXr2A73cRM2frx5ld1RJUCJkFNZ90ZiI=
 github.com/patrickmn/go-cache v2.1.0+incompatible/go.mod h1:3Qf8kWWT7OJRJbdiICTKqZju1ZixQ/KpMGzzAfe6+WQ=
 github.com/petar/GoLLRB v0.0.0-20130427215148-53be0d36a84c/go.mod h1:HUpKUBZnpzkdx0kD/+Yfuft+uD3zHGtXF/XJB14TUr4=
 github.com/peterbourgon/diskv v2.0.1+incompatible/go.mod h1:uqqh8zWWbv1HBMNONnaR/tNboyR3/BZd58JJSHlUSCU=

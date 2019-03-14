@@ -1,6 +1,7 @@
 package huaweiapm
 
 import (
+	"fmt"
 	"github.com/go-mesh/openlogging"
 	"github.com/openzipkin-contrib/zipkin-go-opentracing/thrift/gen-go/zipkincore"
 	"sync"
@@ -10,6 +11,8 @@ import (
 var batch = make([]*zipkincore.Span, 0)
 var batchMutex = &sync.Mutex{}
 var spanC = make(chan *zipkincore.Span)
+
+var tracingRunning = true
 
 func appendSpan(span *zipkincore.Span) int {
 	batchMutex.Lock()
@@ -25,13 +28,15 @@ func doReport() {
 		openlogging.Error("can not report tracing: " + err.Error())
 		return
 	}
+	openlogging.Debug(fmt.Sprintf("report %d spans", len(batch)))
 	batch = batch[len(batch):]
-	openlogging.Debug("report tracing success")
+
 }
 func startReportSpans() {
 	t, _ := time.ParseDuration(opt.TracingBatchInterval)
 	ticker := time.Tick(t)
 	openlogging.Debug("start tracing")
+
 	for {
 		select {
 		case <-ticker:
@@ -44,6 +49,7 @@ func startReportSpans() {
 		case stop := <-StopTracing:
 			if stop {
 				openlogging.Info("tracing stopped")
+				tracingRunning = false
 				break
 			}
 		}
@@ -51,5 +57,8 @@ func startReportSpans() {
 
 }
 func WriteSpan(span *zipkincore.Span) {
+	if !tracingRunning {
+		openlogging.Warn("lost span, huawei apm tracing is not running")
+	}
 	spanC <- span
 }

@@ -21,6 +21,10 @@ var StopTracing = make(chan bool)
 var StopInventory = make(chan bool)
 var StopKPI = make(chan bool)
 
+var StartTracing = make(chan bool)
+var StartInventory = make(chan bool)
+var StartKPI = make(chan bool)
+
 func Start(opts Options) error {
 	if err := validator.Validate(opts); err != nil {
 		return err
@@ -45,5 +49,18 @@ func Start(opts Options) error {
 	go startDiscovery(disco)
 	go startReportSpans()
 	go watchConfigs(opt.App, opt.ServiceName)
+
+	//watch signal
+	go func() {
+		select {
+		case s := <-StartTracing:
+			if s && !tracingRunning {
+				openlogging.Info("restart tracing")
+				go startReportSpans()
+				tracingRunning = true
+			}
+
+		}
+	}()
 	return nil
 }

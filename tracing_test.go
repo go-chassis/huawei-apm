@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestWriteSpan(t *testing.T) {
@@ -21,5 +22,6 @@ func TestWriteSpan(t *testing.T) {
 
 	span := &zipkincore.Span{}
 	t.Log(span)
+	time.Sleep(1 * time.Second)
 	huaweiapm.WriteSpan(span)
 }
