@@ -82,17 +82,17 @@ func BuildTDiscoveryInfo(opts Options) (*apm.TDiscoveryInfo, error) {
 	if ip == "" {
 		ip = GetLocalIP()
 	}
-	app := opts.App
-	if app == "" {
-		app = opts.MonitoringGroup
+	if opts.MonitoringGroup == "" {
+		opts.MonitoringGroup = "default"
+	}
+	if opts.App == "" {
+		opts.App = opts.MonitoringGroup
 	}
 	if opts.Project == "" {
 		opts.Project = "default"
 		openlogging.Warn("project is empty")
 	}
-	if opts.MonitoringGroup == "" {
-		opts.MonitoringGroup = "default"
-	}
+
 	pod, err := runtime.PodID()
 	if err != nil {
 		return nil, err
