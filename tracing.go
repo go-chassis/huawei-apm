@@ -8,57 +8,77 @@ import (
 	"time"
 )
 
-var batch = make([]*zipkincore.Span, 0)
-var batchMutex = &sync.Mutex{}
-var spanC = make(chan *zipkincore.Span)
-
-var tracingRunning = true
-
-func appendSpan(span *zipkincore.Span) int {
-	batchMutex.Lock()
-	defer batchMutex.Unlock()
-	batch = append(batch, span)
-	return len(batch)
+type TracingReporter struct {
+	batch          []*zipkincore.Span
+	batchMutex     *sync.Mutex
+	spanC          chan *zipkincore.Span
+	batchInterval  string
+	batchSize      int
+	tracingRunning bool
 }
-func doReport() {
-	batchMutex.Lock()
-	defer batchMutex.Unlock()
-	err := client.ReportTracing(batch)
+
+func NewTracingReporter(batchInterval string, batchSize int) *TracingReporter {
+	if batchInterval == "" {
+		batchInterval = DefaultTracingBatchInterval
+	}
+	if batchSize == 0 {
+		batchSize = DefaultTracingBatchSize
+	}
+	tr = &TracingReporter{
+		batch:         make([]*zipkincore.Span, 0),
+		batchMutex:    &sync.Mutex{},
+		spanC:         make(chan *zipkincore.Span),
+		batchSize:     batchSize,
+		batchInterval: batchInterval,
+	}
+	return tr
+}
+func (tr *TracingReporter) appendSpan(span *zipkincore.Span) int {
+	tr.batchMutex.Lock()
+	defer tr.batchMutex.Unlock()
+	tr.batch = append(tr.batch, span)
+	return len(tr.batch)
+}
+func (tr *TracingReporter) doReport() {
+	tr.batchMutex.Lock()
+	defer tr.batchMutex.Unlock()
+	err := client.ReportTracing(tr.batch)
 	if err != nil {
 		openlogging.Error("can not report tracing: " + err.Error())
 		return
 	}
-	openlogging.Debug(fmt.Sprintf("report %d spans", len(batch)))
-	batch = batch[len(batch):]
+	openlogging.Debug(fmt.Sprintf("report %d spans", len(tr.batch)))
+	tr.batch = tr.batch[len(tr.batch):]
 
 }
-func startReportSpans() {
-	t, _ := time.ParseDuration(opt.TracingBatchInterval)
+func (tr *TracingReporter) StartReportSpans() {
+	t, _ := time.ParseDuration(tr.batchInterval)
 	ticker := time.Tick(t)
 	openlogging.Debug("start tracing")
-
+	tr.tracingRunning = true
 	for {
+
 		select {
 		case <-ticker:
-			doReport()
-		case span := <-spanC:
-			size := appendSpan(span)
-			if size >= opt.TracingBatchSize {
-				doReport()
+			tr.doReport()
+		case span := <-tr.spanC:
+			size := tr.appendSpan(span)
+			if size >= tr.batchSize {
+				tr.doReport()
 			}
 		case stop := <-StopTracing:
 			if stop {
-				openlogging.Info("tracing stopped")
-				tracingRunning = false
+				openlogging.Warn("stopped reporting spans, huawei apm tracing function lost")
+				tr.tracingRunning = false
 				break
 			}
 		}
 	}
 
 }
-func WriteSpan(span *zipkincore.Span) {
-	if !tracingRunning {
-		openlogging.Warn("lost span, huawei apm tracing is not running")
+func (tr *TracingReporter) WriteSpan(span *zipkincore.Span) {
+	if !tr.tracingRunning {
+		return
 	}
-	spanC <- span
+	tr.spanC <- span
 }

@@ -12,10 +12,9 @@ import (
 func TestWriteSpan(t *testing.T) {
 	os.Setenv("PAAS_POD_ID", "1")
 	err := huaweiapm.Start(huaweiapm.Options{
-		TracingBatchInterval: "2s",
-		MonitoringGroup:      "app",
-		ServiceName:          "service",
-		ServiceType:          "go-chassis",
+		MonitoringGroup: "app",
+		ServiceName:     "service",
+		ServiceType:     "go-chassis",
 	})
 	t.Log(err)
 	assert.NoError(t, err)
@@ -23,5 +22,7 @@ func TestWriteSpan(t *testing.T) {
 	span := &zipkincore.Span{}
 	t.Log(span)
 	time.Sleep(1 * time.Second)
-	huaweiapm.WriteSpan(span)
+	r := huaweiapm.NewTracingReporter("1s", 1)
+	go r.StartReportSpans()
+	r.WriteSpan(span)
 }

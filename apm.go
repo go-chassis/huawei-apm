@@ -14,7 +14,7 @@ const (
 
 var client api.APM
 
-var opt = Options{}
+var tr *TracingReporter
 
 //Switchers
 var StopTracing = make(chan bool)
@@ -29,13 +29,8 @@ func Start(opts Options) error {
 	if err := validator.Validate(opts); err != nil {
 		return err
 	}
-	opt = opts
-	if opt.TracingBatchInterval == "" {
-		opt.TracingBatchInterval = DefaultTracingBatchInterval
-	}
-	if opt.TracingBatchSize == 0 {
-		opt.TracingBatchSize = DefaultTracingBatchSize
-	}
+	opt := opts
+
 	disco, err := BuildTDiscoveryInfo(opts)
 	if err != nil {
 		openlogging.Error("can not build discovery info: " + err.Error())
@@ -47,17 +42,16 @@ func Start(opts Options) error {
 	}
 	openlogging.Debug("APM client init success")
 	go startDiscovery(disco)
-	go startReportSpans()
+
 	go watchConfigs(opt.App, opt.ServiceName)
 
 	//watch signal
 	go func() {
 		select {
 		case s := <-StartTracing:
-			if s && !tracingRunning {
+			if s && !tr.tracingRunning {
 				openlogging.Info("restart tracing")
-				go startReportSpans()
-				tracingRunning = true
+				go tr.StartReportSpans()
 			}
 
 		}
