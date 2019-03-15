@@ -19,18 +19,25 @@ const (
 var instance *apm.TDiscoveryInfo
 
 func startDiscovery(disco *apm.TDiscoveryInfo) {
+	if err := client.ReportDiscoveryInfo(disco); err != nil {
+		openlogging.Error("can not report inventory: " + err.Error())
+	}
+	openlogging.Debug("report inventory success")
 	t, _ := time.ParseDuration(DefaultDiscoveryInterval)
 	ticker := time.Tick(t)
-	select {
-	case <-ticker:
-		if err := client.ReportDiscoveryInfo(disco); err != nil {
-			openlogging.Error("can not report inventory: " + err.Error())
-		}
-		openlogging.Debug("report inventory success")
-	case stop := <-StopInventory:
-		if stop {
-			openlogging.Info("inventory stopped")
-			break
+
+	for {
+		select {
+		case <-ticker:
+			if err := client.ReportDiscoveryInfo(disco); err != nil {
+				openlogging.Error("can not report inventory: " + err.Error())
+			}
+			openlogging.Debug("report inventory success")
+		case stop := <-StopInventory:
+			if stop {
+				openlogging.Info("inventory stopped")
+				break
+			}
 		}
 	}
 }
@@ -113,7 +120,7 @@ func BuildTDiscoveryInfo(opts Options) (*apm.TDiscoveryInfo, error) {
 	instance.CollectorId = instance.AgentId
 	instance.AppId = NewAppID(instance.ProjectId, instance.GetAppName())
 	instance.Tier = instance.DisplayName
-
+	openlogging.Debug(fmt.Sprintf("build inventory %s", instance))
 	return instance, nil
 }
 

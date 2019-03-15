@@ -2,6 +2,7 @@ package api
 
 import (
 	"bufio"
+	"fmt"
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/go-chassis/huawei-apm/pkg/fifo"
 	"github.com/go-chassis/huawei-apm/thrift/gen-go/apm"
@@ -45,7 +46,7 @@ func (da *DefaultAPM) ReportDiscoveryInfo(info *apm.TDiscoveryInfo) error {
 		openlogging.Error("can not serialize discovery: " + err.Error())
 		return err
 	}
-	_, err := da.writer.Write(t.Buffer.Bytes())
+	n, err := da.writer.Write(t.Buffer.Bytes())
 	if err != nil {
 		openlogging.Error("can not report discovery: " + err.Error())
 		return err
@@ -55,6 +56,7 @@ func (da *DefaultAPM) ReportDiscoveryInfo(info *apm.TDiscoveryInfo) error {
 		openlogging.Error("can not flush discovery: " + err.Error())
 		return err
 	}
+	openlogging.Debug(fmt.Sprintf("write inventory size %d to fifo", n))
 	return nil
 }
 func (da *DefaultAPM) ReportKPI(messages []*apm.TKpiMessage) error {
